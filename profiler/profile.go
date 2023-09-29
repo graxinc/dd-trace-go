@@ -19,6 +19,7 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/profiler/internal/pprofutils"
 
 	"github.com/DataDog/gostackparse"
+	"github.com/felixge/fgprof"
 	pprofile "github.com/google/pprof/profile"
 )
 
@@ -129,7 +130,19 @@ var profileTypes = map[ProfileType]profileType{
 	MutexProfile: {
 		Name:     "mutex",
 		Filename: "mutex.pprof",
-		Collect:  collectGenericProfile("mutex", MutexProfile),
+		Collect: func(p *profiler) ([]byte, error) {
+			if !p.cfg.clockAsMutexProfile {
+				return collectGenericProfile("mutex", MutexProfile)(p)
+			}
+
+			var buf bytes.Buffer
+			stop := fgprof.StartFull(&buf, fgprof.FormatPprof, fgprof.Sample{Name: "contentions", Type: "delay"})
+			p.interruptibleSleep(p.cfg.cpuDuration)
+			if err := stop(); err != nil {
+				return nil, err
+			}
+			return buf.Bytes(), nil
+		},
 		DeltaValues: []pprofutils.ValueType{
 			{Type: "contentions", Unit: "count"},
 			{Type: "delay", Unit: "nanoseconds"},

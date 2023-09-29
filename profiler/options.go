@@ -109,6 +109,7 @@ type config struct {
 	logStartup           bool
 	traceConfig          executionTraceConfig
 	endpointCountEnabled bool
+	clockAsMutexProfile  bool
 }
 
 // logStartup records the configuration to the configured logger in JSON format
@@ -527,6 +528,12 @@ func WithLogStartup(enabled bool) Option {
 func WithHostname(hostname string) Option {
 	return func(cfg *config) {
 		cfg.hostname = hostname
+	}
+}
+
+func WithClockAsMutexProfile() Option {
+	return func(cfg *config) {
+		cfg.clockAsMutexProfile = true
 	}
 }
 
