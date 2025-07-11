@@ -287,6 +287,15 @@ func (p *profiler) collect(ticker <-chan time.Time) {
 				p.pendingProfiles.Add(1)
 			}
 		}
+
+		notifyCancel := func() {}
+		if p.cfg.notify != nil {
+			select {
+			case notifyCancel = <-p.cfg.notify:
+			default:
+			}
+		}
+
 		for _, t := range profileTypes {
 			wg.Add(1)
 			go func(t ProfileType) {
@@ -306,6 +315,7 @@ func (p *profiler) collect(ticker <-chan time.Time) {
 			}(t)
 		}
 		wg.Wait()
+		notifyCancel()
 		for _, prof := range completed {
 			if prof.pt == executionTrace {
 				// If the profile batch includes a runtime execution trace, add a tag so

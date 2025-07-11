@@ -417,6 +417,31 @@ func TestCorrectTags(t *testing.T) {
 	}
 }
 
+func TestNotify(t *testing.T) {
+	profMeta := make(chan profileMeta)
+	server := httptest.NewServer(&mockBackend{t: t, profiles: profMeta})
+	defer server.Close()
+
+	notify := make(chan func(), 1)
+
+	var called bool
+	notify <- func() {
+		called = true
+	}
+
+	Start(
+		WithAgentAddr(server.Listener.Addr().String()),
+		WithProfileTypes(
+			HeapProfile,
+		),
+		WithPeriod(10*time.Millisecond),
+		WithNotify(notify),
+	)
+	defer Stop()
+	<-profMeta
+	require.Equal(t, true, called)
+}
+
 func TestImmediateProfile(t *testing.T) {
 	received := make(chan struct{}, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -110,6 +110,7 @@ type config struct {
 	traceConfig          executionTraceConfig
 	endpointCountEnabled bool
 	clockAsMutexProfile  bool
+	notify               <-chan func()
 }
 
 // logStartup records the configuration to the configured logger in JSON format
@@ -534,6 +535,13 @@ func WithHostname(hostname string) Option {
 func WithClockAsMutexProfile() Option {
 	return func(cfg *config) {
 		cfg.clockAsMutexProfile = true
+	}
+}
+
+// Will read a func for each profile start (non blocking) which is called when profiling stops.
+func WithNotify(n <-chan func()) Option {
+	return func(cfg *config) {
+		cfg.notify = n
 	}
 }
 
